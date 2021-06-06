@@ -1,0 +1,42 @@
+2021-06-03 10:39:10,847 - tornado.general - ERROR - Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/zmq/eventloop/zmqstream.py", line 438, in _run_callback
+    callback(*args, **kwargs)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/tornado/stack_context.py", line 300, in null_wrapper
+    return fn(*args, **kwargs)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/ipykernel/kernelbase.py", line 283, in dispatcher
+    return self.dispatch_shell(stream, msg)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/ipykernel/kernelbase.py", line 233, in dispatch_shell
+    handler(stream, idents, msg)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/ipykernel/kernelbase.py", line 399, in execute_request
+    user_expressions, allow_stdin)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/ipykernel/ipkernel.py", line 208, in do_execute
+    res = shell.run_cell(code, store_history=store_history, silent=silent)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/ipykernel/zmqshell.py", line 537, in run_cell
+    return super(ZMQInteractiveShell, self).run_cell(*args, **kwargs)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/IPython/core/interactiveshell.py", line 2722, in run_cell
+    self.events.trigger('post_execute')
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/IPython/core/events.py", line 74, in trigger
+    func(*args, **kwargs)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/ipykernel/pylab/backend_inline.py", line 117, in flush_figures
+    return show(True)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/ipykernel/pylab/backend_inline.py", line 39, in show
+    metadata=_fetch_figure_metadata(figure_manager.canvas.figure)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/IPython/core/display.py", line 311, in display
+    format_dict, md_dict = format(obj, include=include, exclude=exclude)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/IPython/core/formatters.py", line 173, in format
+    data = formatter(obj)
+  File "</home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/decorator.pyc:decorator-gen-9>", line 2, in __call__
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/IPython/core/formatters.py", line 217, in catch_format_error
+    r = method(self, *args, **kwargs)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/IPython/core/formatters.py", line 334, in __call__
+    return printer(obj)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/IPython/core/pylabtools.py", line 247, in <lambda>
+    png_formatter.for_type(Figure, lambda fig: print_figure(fig, 'png', **kwargs))
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/IPython/core/pylabtools.py", line 131, in print_figure
+    fig.canvas.print_figure(bytes_io, **kw)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/matplotlib/backend_bases.py", line 2212, in print_figure
+    **kwargs)
+  File "/home/sagar/anaconda3/envs/env_py2/lib/python2.7/site-packages/matplotlib/backends/backend_agg.py", line 532, in print_png
+    self.figure.dpi, metadata=metadata)
+KeyboardInterrupt
