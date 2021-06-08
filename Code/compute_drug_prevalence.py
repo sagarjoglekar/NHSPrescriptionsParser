@@ -4,6 +4,7 @@ import argparse
 import glob 
 import networkx as nx
 import pandas as pd
+import sys
 
 mappings_dir = '../mappings/'
 input_dir = '../../../BL_Work/openPrescribe/serialized/'
@@ -26,32 +27,29 @@ def DrugMatching(conditions, isCat=False):
     chem = pd.read_csv(mappings_dir + 'CHEM_MASTER_MAP.csv')
 
     DiseaseDrugs = {}
-    for d in conditions:
-        if not isCat:
-            drugs = findDrugsForDisease(drug_association_graph,d ,chem)
-        else:
-            drugs = findDrugsForCategory(drug_cat_association_graph,d ,chem)
-
+    for d in tqdm(conditions):
+        drugs = findDrugsForDisease(drug_association_graph,d ,chem)
+    #     drugs = findDrugsByName(drug_association_graph,d ,chem)
         for drug in drugs:
             DiseaseDrugs[drug] = {}
             DiseaseDrugs[drug]['chemName'] = drugs[drug]['name']
-            DiseaseDrugs[drug]['disease'] = d
+            DiseaseDrugs[drug]['drugName'] = d
     
     disease_drug_map = {}
     for k in DiseaseDrugs:
-        if DiseaseDrugs[k]['disease'] not in disease_drug_map:
-            disease_drug_map[DiseaseDrugs[k]['disease']] = []
-        disease_drug_map[DiseaseDrugs[k]['disease']].append(k)
+        if DiseaseDrugs[k]['drugName'] not in disease_drug_map:
+            disease_drug_map[DiseaseDrugs[k]['drugName']] = []
+        disease_drug_map[DiseaseDrugs[k]['drugName']].append(k)
     return DiseaseDrugs , disease_drug_map
 
 def dumpDrugs(DiseaseDrugs):
-    drug_map_dict = {'BNF_code':[], 'Drug_name':[] , 'Mapped_Condition': []}
+    drug_map_dict = {'BNF_code':[], 'Drug_name':[] , 'Mapped_Drug': []}
     for k in DiseaseDrugs:
         drug_map_dict['BNF_code'].append(k)
         drug_map_dict['Drug_name'].append(DiseaseDrugs[k]['chemName'])
-        drug_map_dict['Mapped_Condition'].append(DiseaseDrugs[k]['disease'])
+        drug_map_dict['Mapped_Drug'].append(DiseaseDrugs[k]['drugName'])
     drug_map_df = pd.DataFrame.from_dict(drug_map_dict)    
-    drug_map_df.to_csv(output_dir + 'Drugs.csv',index=False)
+    drug_map_df.to_csv(output_dir + 'Drug_map.csv',index=False)
 
 def loadLSOA_mappings():
     LSOA_dist_old = json.load(open(mappings_dir + 'GP_LSOA_PATIENTSDIST.json','rb'))
@@ -122,16 +120,19 @@ def writeResultFiles(monthly_borough_dosage_new , monthly_borough_costs_new , di
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c' , '--conditions' ,nargs="+" ,help="list of a conditions you need prescription prevalence for. Can be a list of single item ['item'] ")
-    parser.add_argument('--isCat' , type=str2bool , default=False, help=" Boolean flag to notify if the list is a set of conditions or categories. Default is False, implying conditions ")
+    parser.add_argument('-d' , '--drugs' ,nargs="+" ,help="list of a drug names you need prescription prevalence for. Can be a list of single item e.g ['ibuprofen'] ")
     parser.add_argument('-s', "--start" , help="start year and month, format YYYYMM")
     parser.add_argument('-e', "--end" , help="end year and month, format YYYYMM")
     parser.add_argument('-odir', "--output_dir" , help="Directory for output files, default ../data_prep/")
     parser.add_argument('-idir', "--input_dir" , help="Directory for input nhs files, default: ../../BL_Work/openPrescribe/serialized/. Make sure that you have NHS files downloaded here. There is no sanity check here.")
 
+    if len(sys.argv)==1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+
     args = parser.parse_args()
 
-    conditions = args.conditions
+    conditions = args.drugs
     start = str(args.start)
     end = str(args.end)
 
@@ -170,7 +171,7 @@ if __name__ == '__main__':
 
     
 
-    DiseaseDrugs, drugMap = DrugMatching(conditions , args.isCat)
+    DiseaseDrugs, drugMap = DrugMatching(conditions)
     print(drugMap)
 
     monthly_borough_dosage_new = {}

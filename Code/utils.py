@@ -163,3 +163,32 @@ def findDrugsForCategory(Graph, Cat, BNF_Chem ):#,threshProb):
             drugs[Graph.node[drugNode]['Id']]['category'] = Cat
     enrichdrugs(chem_dict,drugs)
     return drugs
+
+
+
+def enrichdrugsByNames(chem_dict , drugs , drugname):
+    drug_words = [drugs[k]['name'].lower() for k in drugs]
+    for drug in chem_dict:
+        Name = chem_dict[drug]['name'].replace('(','').replace(')','')
+        slot1 = Name.lower().split('/')
+        slot2 = Name.lower().split(' ')
+        slot3 = Name.lower().split(' & ')
+        common1 = set(drug_words).intersection(slot1)
+        common2 = set(drug_words).intersection(slot2)
+        common3 = set(drug_words).intersection(slot3)
+        
+        if len(common1) > 0 or len(common2) > 0 or len(common3) > 0:
+#             print common1 , common2 , common3
+            drugs[chem_dict[drug]['code']] = { 'matched_drug':drugname, 'name':chem_dict[drug]['name'].strip() }
+
+def findDrugsByName(Graph, drugname, BNF_Chem ):#,threshProb):
+    chem_dict = makeChemDict(BNF_Chem)
+    drugs = {}
+    for n in tqdm(Graph.nodes(data=True)):
+        if n[1]['type'] == 'drug':
+            if (cleanStringofUTF(n[1]['label']).lower().find(drugname.lower()) >=0) or (cleanStringofUTF(n[1]['label']).lower().find(drugname.lower()) >= 0) :
+                drugs[n[1]['Id']] = {}
+                drugs[n[1]['Id']]['name'] = n[1]['label']
+                drugs[n[1]['Id']]['matched_drug'] = drugname
+        enrichdrugsByNames(chem_dict,drugs,drugname)
+    return drugs
