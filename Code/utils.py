@@ -192,3 +192,319 @@ def findDrugsByName(Graph, drugname, BNF_Chem ):#,threshProb):
                 drugs[n[1]['Id']]['matched_drug'] = drugname
         enrichdrugsByNames(chem_dict,drugs,drugname)
     return drugs
+
+
+
+
+
+    ### serialization methods ##### 
+
+#Different functions to extract different data form the prescription 
+
+import inspect
+import re
+
+def extractPostCodesDict(addrDf):
+    postcodeDict = {}
+    for index,row in addrDf.iterrows():
+        try:
+            postcodeDict[row[1]] = row[7].strip()
+        except:
+            print("Found invalid entry")
+    return postcodeDict
+
+def checkIndex(index):
+    if index%100 == 0:
+        return True
+    else:
+        return False
+
+def getPC(key , postcodeDict):
+    codes = []
+    for k in key:
+        if k in postcodeDict:
+            codes.append(postcodeDict[k])
+        else:
+            codes.append('')
+    return pd.Series(codes,index=key.index)
+
+def getPostcode(df,postcodeDict):
+    df[10] = ''
+    df[10] = df.groupby(2)[2].apply(getPC,postcodeDict)   
+    return df
+
+def getDrugFamily(key, diseaseMap):
+    found = 'N/A'
+    for dcode in diseaseMap: 
+        if key.name.find(dcode) == 0:
+            found = dcode
+            break
+    drug = [found]*len(key)
+    return pd.Series(drug,index=key.index)
+
+def getDisease(key, diseaseMap):
+    found = 'N/A'
+    for dcode in diseaseMap: 
+        if key.name.find(dcode) == 0:
+            found = diseaseMap[dcode]['disease'].replace('\"','').replace('+',' ')
+            break
+    drug = [found]*len(key)
+    return pd.Series(drug,index=key.index)
+
+def getDrug(key, diseaseMap):
+    found = 'N/A'
+    for dcode in diseaseMap: 
+        if key.name.find(dcode) == 0:
+            found = diseaseMap[dcode]['chemName']
+            break
+    drug = [found]*len(key)
+    return pd.Series(drug,index=key.index)
+
+def getDrugPotency(key):
+    name = list(set(key))
+    if len(name) > 1:
+        print("found synonyms")
+    text= name[-1]
+    found = 0.0
+    switch1 = text.find('mcg')
+    switch2 = text.find('mg')
+    switch3 = text.find('ml')
+    
+    if switch1 > 0 or switch2 > 0 or switch3 > 0:
+        weight = re.findall(r'[0-9]*\.?[0-9]+', text)
+        if len(weight) > 0:
+            found = max([float(k) for k in weight])
+            if switch1 > 0:
+                found = found/1000.0
+    potency = [found]*len(key)
+    return pd.Series(potency,index=key.index)
+
+def countSpecificDrugs(Df, drugs,GPs):
+    df_slice = Df.groupby(3)[3].apply(getDrug,drugs)
+    selected = df_slice[df_slice!='N/A']
+    len(selected)
+    df_selected =  Df.iloc[selected.index,:]
+    df_selected = df_selected[df_selected[2].isin(GPs.keys())]
+    return np.sum(df_selected[5])
+
+
+def countSpecificDrugCosts(Df, drugs,GPs):
+    df_slice = Df.groupby(3)[3].apply(getDrug,drugs)
+    selected = df_slice[df_slice!='N/A']
+    len(selected)
+    df_selected =  Df.iloc[selected.index,:]
+    df_selected = df_selected[df_selected[2].isin(GPs.keys())]
+    return np.sum(df_selected[6])
+
+def countDrugsByCategoryList(pdp,codes):
+    total_drugs = 0.0
+    drugs = None
+    for name , group in pdp.groupby(3):
+        for dcode in codes:
+            if name.find(dcode) == 0:
+                total_drugs+=np.sum(group[5])
+    return total_drugs
+
+def countPrescriptionsByCategoryList(pdp,codes):
+    total_drugs = 0.0
+    drugs = None
+    for name , group in pdp.groupby(3):
+        for dcode in codes:
+            if name.find(dcode) == 0:
+                total_drugs+=len(group)
+    return total_drugs
+
+
+def countDrugsCostByCategoryList(pdp,codes):
+    total_drugs = 0.0
+    for name , group in pdp.groupby(3):
+        for dcode in codes:
+            if name.find(dcode) == 0:
+                total_drugs+=np.sum(group[7])
+    return total_drugs
+
+def countDrugsCostByGenerics(pdp,codes):
+    total_drugs = 0.0
+    generics= pdp[pdp[20] == 'AA']
+    for name , group in generics.groupby(3):
+        for dcode in codes:
+            if name.find(dcode) == 0:
+                total_drugs+=np.sum(group[7])
+    return total_drugs
+
+def compareCostsForGenericsAndBranded(pdp,codes):
+    genericsCosts = {}
+    brandedCosts = {}
+    for name , group in pdp.groupby(16):
+        for dcode in codes:
+            if name == dcode:
+                generics= group[group[20] == 'AA']
+                if len(generics)>0:
+                    total_drugs =np.sum(group[7])
+                    generic_drugs = np.sum(generics[7])
+                    brandedCosts[dcode] = total_drugs - generic_drugs
+                    genericsCosts[dcode] = generic_drugs
+                else:
+                    print("Did not find any generic drugs")
+                    continue
+    return brandedCosts , genericsCosts
+
+def func_Cost(potgroup):
+    
+    generics= potgroup.loc[potgroup[20] == 'AA']
+    nonGenerics =  potgroup.loc[potgroup[20] != 'AA']
+
+    minCost = np.min(generics[7])
+    minpotdf = generics.loc[generics[7] == minCost]
+    minQuant = np.min(minpotdf[8])
+    if minQuant == 0:
+        normalizer = minCost
+    else:
+        normalizer = float(minCost)/float(minQuant)
+    
+    if np.isnan(normalizer):
+        normalizer = 1.0
+    potgroup[21] = normalizer
+    
+    minCostBrand = np.min(nonGenerics[7])
+    minpotdfBrand = nonGenerics.loc[nonGenerics[7] == minCostBrand]
+    minQuantBrand = np.min(minpotdfBrand[8])
+    
+    if minQuantBrand == 0:
+        unitNonGenericCost = minCostBrand
+    else:
+        unitNonGenericCost = float(minCostBrand)/float(minQuantBrand)
+    
+    if np.isnan(unitNonGenericCost):
+        unitNonGenericCost = 1.0
+    potgroup[22] = unitNonGenericCost
+    if unitNonGenericCost > normalizer:
+        potgroup[23] = float(unitNonGenericCost - normalizer)*potgroup[8]    
+    return potgroup
+
+def func_Drugs(group,codes):
+    return group.groupby(15,as_index=False).apply(lambda df : func_Cost(df))
+    
+
+def computeSavingsNew(pdp,codes):
+    pdp[21] = 0.0
+    pdp[22] = 0.0
+    pdp[23] = 0.0
+    return pdp.groupby(16,as_index=False).apply(lambda df: func_Drugs(df , codes))
+
+
+def computeSavings(pdp,codes):
+    pdp[21] = 0.0
+    pdp[22] = 0.0
+    pdp[23] = 0.0
+    for name , group in pdp.groupby(16):
+        #we can remove this to allow computing savings across all drugs
+        if name in codes:
+            for pot , potgroup in group.groupby(15):
+                generics= potgroup.loc[potgroup[20] == 'AA']
+                nonGenerics =  potgroup.loc[potgroup[20] != 'AA']
+
+                minCost = np.min(generics[7])
+                minpotdf = generics.loc[generics[7] == minCost]
+                minQuant = np.min(minpotdf[8])
+                normalizer = float(minCost)/float(minQuant)
+                potgroup[21] = normalizer
+
+                minCostBrand = np.min(nonGenerics[7])
+                minpotdfBrand = nonGenerics.loc[nonGenerics[7] == minCostBrand]
+                minQuantBrand = np.min(minpotdfBrand[8])
+
+                unitNonGenericCost = float(minCostBrand)/float(minQuantBrand)
+                potgroup[22] = unitNonGenericCost
+                
+                if unitNonGenericCost > normalizer:
+                    nonGenerics[23] = float(unitNonGenericCost - normalizer)*nonGenerics[8]
+
+
+def countTotalDrugDosage(pdp,codes):
+    total_drugs = 0.0
+    for name , group in pdp.groupby(3):
+        for dcode in codes:
+            if name.find(dcode) == 0:
+                total_drugs+=np.sum(group[19])
+    return total_drugs
+
+def normalizePills(keys):
+    minima = np.min(keys)
+    if minima > 0:
+        potency = keys/minima
+    else:
+        potency = 1.0
+    return pd.Series(potency,index=keys.index)
+        
+    
+def normalizePotency(keys):
+    minima = np.min(keys)
+    if minima > 0:
+        potency = keys/minima
+    else:
+        potency = 1.0
+    return pd.Series(potency,index=keys.index)
+    
+def normalize(dataFrame):
+    dataFrame[16] = dataFrame[3].str[:9]
+    dataFrame[17] = dataFrame.groupby(16)[8].apply(normalizePills)
+    dataFrame[18] = dataFrame.groupby(16)[15].apply(normalizePotency) 
+    dataFrame[19] = dataFrame[18]*dataFrame[17]
+    dataFrame[20] = dataFrame[3].str[9:11]
+    dataFrame[21] = dataFrame[15]/dataFrame[8]
+    
+    
+def normalize_new(dataFrame):
+    dataFrame[16] = dataFrame['BNF_CODE'].str[:9]
+    dataFrame[17] = dataFrame.groupby(16)['TOTAL_QUANTITY'].apply(normalizePills)
+    dataFrame[18] = dataFrame.groupby(16)[15].apply(normalizePotency) 
+    dataFrame[19] = dataFrame[18]*dataFrame[17]
+    dataFrame[20] = dataFrame['BNF_CODE'].str[9:11]
+    dataFrame[21] = dataFrame[15]/dataFrame['TOTAL_QUANTITY']
+    
+    
+    
+def doImportantMappings(Df):
+    #BNF family
+#     Df[11] = ''  
+#     Df[11] = Df.groupby(3)[3].apply(getDrugFamily,symptomMap)
+#     #Disease
+#     Df[12] = ''  
+#     Df[12] = Df.groupby(3)[3].apply(getDisease,diseaseMap)
+#     #Symptom
+#     Df[13] = ''  
+#     Df[13] = Df.groupby(3)[3].apply(getDisease,symptomMap)
+#     #Checm Name
+#     Df[14] = ''  
+#     Df[14] = Df.groupby(3)[3].apply(getDrug,symptomMap)
+    #Chem potency
+    Df[15] = ''  
+    Df[15] = Df.groupby(3)[4].apply(getDrugPotency)
+
+    normalize(Df)
+
+    return Df
+
+
+
+def doImportantMappings_new(Df):
+    #BNF family
+#     Df[11] = ''  
+#     Df[11] = Df.groupby('BNF_CODE')['BNF_CODE'].apply(getDrugFamily,symptomMap)
+#     #Disease
+#     Df[12] = ''  
+#     Df[12] = Df.groupby('BNF_CODE')['BNF_CODE'].apply(getDisease,diseaseMap)
+#     #Symptom
+#     Df[13] = ''  
+#     Df[13] = Df.groupby('BNF_CODE')['BNF_CODE'].apply(getDisease,symptomMap)
+#     #Checm Name
+#     Df[14] = ''  
+#     Df[14] = Df.groupby('BNF_CODE')['BNF_CODE'].apply(getDrug,symptomMap)
+    #Chem potency
+    Df[15] = ''  
+    Df[15] = Df.groupby('BNF_CODE')['BNF_DESCRIPTION'].apply(getDrugPotency)
+
+    normalize_new(Df)
+
+    return Df

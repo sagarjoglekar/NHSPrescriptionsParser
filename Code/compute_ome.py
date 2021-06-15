@@ -86,8 +86,12 @@ def prepare_lsoa_GP_population():
 
 
 def calculateTemporalMetrics_LSOA_opioids(all_presc , old = True):
-    LSOA_dosage = {}
     LSOA_costs = {}
+    LSOA_items = {}
+    LSOA_quantity = {}
+    LSOA_ome = {}
+
+
     LSOA_patient_count = {}
     fail = 0.0
     LSOA_map = {}
@@ -95,44 +99,56 @@ def calculateTemporalMetrics_LSOA_opioids(all_presc , old = True):
 
     #At this time we are using the same map for all files. Ideally, every year needs to have a different map.
     if old:
-        dosageField = '8'
-        costField = 'presc_ome'
+        quantityField = '8'
+        costField = '7'
+        omeField = 'presc_ome'
+        itemField = '5'
         practiceField = '2'
         LSOA_map = LSOA_dist_2021
     else:
-        dosageField = 'TOTAL_QUANTITY'
-        costField = 'presc_ome'
+        quantityField = 'TOTAL_QUANTITY'
+        costField = 'ACTUAL_COST'
+        omeField = 'presc_ome'
+        itemField = 'ITEMS'
         practiceField = 'PRACTICE_CODE'
         LSOA_map = LSOA_dist_2021
 
     for name, group in all_presc.groupby(practiceField):
-        total_dosage = np.sum(group[dosageField])
+        total_ome = np.sum(group[omeField])
         total_cost = np.sum(group[costField])
+        total_quantity = np.sum(group[quantityField])
+        total_items = np.sum(group[itemField])
         if name in LSOA_map:        
             for k in LSOA_map[name]:
-                if k not in LSOA_dosage:
-                    LSOA_dosage[k] = 0.0
+                if k not in LSOA_ome:
+                    LSOA_ome[k] = 0.0
                     LSOA_costs[k] = 0.0
-                LSOA_dosage[k]+= float(total_dosage)*float(LSOA_map[name][k])
+                    LSOA_quantity[k] = 0.0
+                    LSOA_items[k] = 0.0
+                LSOA_ome[k]+= float(total_ome)*float(LSOA_map[name][k])
                 LSOA_costs[k]+= float(total_cost)*float(LSOA_map[name][k])
+                LSOA_quantity[k]+= float(total_quantity)*float(LSOA_map[name][k])
+                LSOA_items[k]+= float(total_items)*float(LSOA_map[name][k])
     
-    return  LSOA_dosage , LSOA_costs
+    return  LSOA_quantity  , LSOA_costs,  LSOA_ome , LSOA_items
 
 
-def writeResultFiles(monthly_borough_dosage_new , monthly_borough_costs_new , diseases):
+def writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , monthly_borough_costs_new , monthly_borough_items_new ,diseases):
     LSOA_patient_pop = prepare_lsoa_GP_population()
     for disease in tqdm(diseases):
-        disease_dict = {'YYYYMM':[] , 'LSOA_CODE' : [] , 'Total_prescriptions' : [] ,'OME' :[] , 'Patient_count' : []}
+        disease_dict = {'YYYYMM':[] , 'LSOA_CODE' : [] , 'Total_quantity' : [] ,'OME' :[] , 'Total_cost' : [] ,'Total_items': [] , 'Patient_count' : []}
         for yyyymm in monthly_borough_dosage_new:
             for LSOA_CODE in monthly_borough_dosage_new[yyyymm][disease]:
                 if LSOA_CODE[0] == 'E':
                     disease_dict['YYYYMM'].append(yyyymm)
                     disease_dict['LSOA_CODE'].append(LSOA_CODE)
-                    disease_dict['Total_prescriptions'].append(monthly_borough_dosage_new[yyyymm][disease][LSOA_CODE])
-                    disease_dict['OME'].append(monthly_borough_costs_new[yyyymm][disease][LSOA_CODE])
+                    disease_dict['Total_quantity'].append(monthly_borough_quantity_new[yyyymm][disease][LSOA_CODE])
+                    disease_dict['OME'].append(monthly_borough_dosage_new[yyyymm][disease][LSOA_CODE])
+                    disease_dict['Total_cost'].append(monthly_borough_costs_new[yyyymm][disease][LSOA_CODE])
+                    disease_dict['Total_items'].append(monthly_borough_items_new[yyyymm][disease][LSOA_CODE])
                     disease_dict['Patient_count'].append(LSOA_patient_pop[LSOA_CODE])
         disease_df = pd.DataFrame.from_dict(disease_dict)
-        filename = output_dir + disease+'_V2.csv.gz'
+        filename = output_dir + disease+'_V3.csv.gz'
         disease_df.to_csv(filename,index=False,compression='gzip')
 
 if __name__ == '__main__':
@@ -187,6 +203,9 @@ if __name__ == '__main__':
 
     monthly_borough_dosage_new = {}
     monthly_borough_costs_new = {}
+    monthly_borough_quantity_new = {}
+    monthly_borough_items_new = {}
+
 
 
     #Compute prevalence over selected files
@@ -205,17 +224,24 @@ if __name__ == '__main__':
         
         monthly_borough_dosage_new[month] = {}
         monthly_borough_costs_new[month] = {}
+        monthly_borough_quantity_new[month] = {}
+        monthly_borough_items_new[month] = {}
+
         pdp = pd.read_csv(f,compression='gzip')
         opioids = pdp[pdp[code_field].isin(ome_map.keys())]
         opioids = calculateOME(opioids , ome_map ,code_field , dosageField) 
+
         monthly_borough_dosage_new[month]['opioids'] = {}
         monthly_borough_costs_new[month]['opioids'] = {}
-        monthly_borough_dosage_new[month]['opioids'] , monthly_borough_costs_new[month]['opioids'] = calculateTemporalMetrics_LSOA_opioids(opioids, old)
+        monthly_borough_quantity_new[month]['opioids'] = {}
+        monthly_borough_items_new[month]['opioids'] = {}
+        
+        monthly_borough_quantity_new[month]['opioids'] , monthly_borough_costs_new[month]['opioids'], monthly_borough_dosage_new[month]['opioids']  , monthly_borough_items_new[month]['opioids'] = calculateTemporalMetrics_LSOA_opioids(opioids, old)
 
 
     print("Done computing LSOA level prescription prevalences, writing files")
 
 
-    writeResultFiles(monthly_borough_dosage_new , monthly_borough_costs_new , ['opioids'])
+    writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , monthly_borough_costs_new , monthly_borough_items_new , ['opioids'])
 
     print("Finished processing !!!!! ")
