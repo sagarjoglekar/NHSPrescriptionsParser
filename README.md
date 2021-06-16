@@ -1,7 +1,7 @@
 ## Presc_pre_post_covid
 Repo to freshly analyse prescription data
 
-Code: 
+## Code: 
 The Code/ directory streamlines all the work done till date on extraction of the geographical trends in prescriptions from the NHS data. 
 The scripts sequentially help in matching conditions/drug categories to a set of drugs, 
 which are then matched to a set of BNF codes, which in-turn are used to map prescriptions to LSOAs in England. 
