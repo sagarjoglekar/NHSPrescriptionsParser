@@ -7,7 +7,7 @@ import pandas as pd
 import sys
 
 mappings_dir = '../mappings/'
-input_dir = '../../../BL_Work/openPrescribe/serialized/'
+input_dir = '/10TBDrive_2/sagar/NHS_data/serialized/'
 output_dir = '../data_prep/'
 
 
@@ -148,7 +148,7 @@ def writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , 
                     disease_dict['Total_items'].append(monthly_borough_items_new[yyyymm][disease][LSOA_CODE])
                     disease_dict['Patient_count'].append(LSOA_patient_pop[LSOA_CODE])
         disease_df = pd.DataFrame.from_dict(disease_dict)
-        filename = output_dir + disease+'_V3.csv.gz'
+        filename = output_dir + disease+'_V4.csv.gz'
         disease_df.to_csv(filename,index=False,compression='gzip')
 
 if __name__ == '__main__':
@@ -213,7 +213,7 @@ if __name__ == '__main__':
     for f in tqdm(files_sub):
         month = f.split('/')[-1].split('.')[0]
         print("Working with month  " + month)
-        if int(month) > 201906:
+        if int(month) > 201312:
             old = False
             code_field = 'BNF_CODE'
             dosageField = 'TOTAL_QUANTITY'
