@@ -1,4 +1,4 @@
-# Presc_pre_post_covid
+## Presc_pre_post_covid
 Repo to freshly analyse prescription data
 
 Code: 
@@ -8,8 +8,8 @@ which are then matched to a set of BNF codes, which in-turn are used to map pres
 The code is supposed to be run on a pre-serialized set of NHS prescriptions files (which you can download if you don't want to serialize again from here: https://www.dropbox.com/sh/09367w8uf4hbla5/AAAJIHQPq4Lw_4R--AyY7xIua?dl=0)
 If you do wish to serialize form scratch, download the raw prescriptions form the NHS website and run the serialize.py on all of them. 
 
-Notebooks: 
+## Notebooks: 
 The notebooks are there to do some exploratory analysis of the prescriptions. 
 
-Mappings: 
+## Mappings: 
 This directory contains all the mappings required for generating spatio-temporal trends from raw prescroptions. 
