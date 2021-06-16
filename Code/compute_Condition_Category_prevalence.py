@@ -148,6 +148,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     conditions = args.conditions
+    print("Running for : ",conditions)
+    
     start = str(args.start)
     end = str(args.end)
 
@@ -187,7 +189,9 @@ if __name__ == '__main__':
     
 
     DiseaseDrugs, drugMap = DrugMatching(conditions , args.isCat)
-    print(drugMap)
+    
+    for k in drugMap:
+        print(k , drugMap[k])
 
     monthly_borough_dosage_new = {}
     monthly_borough_costs_new = {}
