@@ -7,10 +7,12 @@ import pandas as pd
 import sys
 from compute_Condition_Category_prevalence import calculateTemporalMetrics_LSOA, writeResultFiles
 
+# mappings_dir = '../mappings/'
+# input_dir = '../../../BL_Work/openPrescribe/serialized/'
+# output_dir = '../data_prep/'
 mappings_dir = '../mappings/'
-input_dir = '../../../BL_Work/openPrescribe/serialized/'
+input_dir = '/10TBDrive_2/sagar/NHS_data/serialized/'
 output_dir = '../data_prep/'
-
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -67,57 +69,6 @@ def prepare_lsoa_GP_population():
             else:
                 LSOA_patient_pop[lsoa] += LSOA_patients_map[GP]['Patient_registry_LSOA'][lsoa]
     return LSOA_patient_pop
-
-
-# def calculateTemporalMetrics_LSOA(all_presc , old = True):
-#     LSOA_dosage = {}
-#     LSOA_costs = {}
-#     LSOA_patient_count = {}
-#     fail = 0.0
-#     LSOA_map = {}
-#     [LSOA_dist_old , LSOA_dist_2021] = loadLSOA_mappings()
-
-#     #At this time we are using the same map for all files. Ideally, every year needs to have a different map.
-#     if old:
-#         dosageField = '8'
-#         costField = '19'
-#         practiceField = '2'
-#         LSOA_map = LSOA_dist_2021
-#     else:
-#         dosageField = 'TOTAL_QUANTITY'
-#         costField = '19'
-#         practiceField = 'PRACTICE_CODE'
-#         LSOA_map = LSOA_dist_2021
-
-#     for name, group in all_presc.groupby(practiceField):
-#         total_dosage = np.sum(group[dosageField])
-#         total_cost = np.sum(group[costField])
-#         if name in LSOA_map:        
-#             for k in LSOA_map[name]:
-#                 if k not in LSOA_dosage:
-#                     LSOA_dosage[k] = 0.0
-#                     LSOA_costs[k] = 0.0
-#                 LSOA_dosage[k]+= float(total_dosage)*float(LSOA_map[name][k])
-#                 LSOA_costs[k]+= float(total_cost)*float(LSOA_map[name][k])
-    
-#     return  LSOA_dosage , LSOA_costs
-
-
-# def writeResultFiles(monthly_borough_dosage_new , monthly_borough_costs_new , diseases):
-#     LSOA_patient_pop = prepare_lsoa_GP_population()
-#     for disease in tqdm(diseases):
-#         disease_dict = {'YYYYMM':[] , 'LSOA_CODE' : [] , 'Total_prescriptions' : [] ,'Dosage_ratio' :[] , 'Patient_count' : []}
-#         for yyyymm in monthly_borough_dosage_new:
-#             for LSOA_CODE in monthly_borough_dosage_new[yyyymm][disease]:
-#                 if LSOA_CODE[0] == 'E':
-#                     disease_dict['YYYYMM'].append(yyyymm)
-#                     disease_dict['LSOA_CODE'].append(LSOA_CODE)
-#                     disease_dict['Total_prescriptions'].append(monthly_borough_dosage_new[yyyymm][disease][LSOA_CODE])
-#                     disease_dict['Dosage_ratio'].append(monthly_borough_costs_new[yyyymm][disease][LSOA_CODE])
-#                     disease_dict['Patient_count'].append(LSOA_patient_pop[LSOA_CODE])
-#         disease_df = pd.DataFrame.from_dict(disease_dict)
-#         filename = output_dir + disease+'_V2.csv.gz'
-#         disease_df.to_csv(filename,index=False,compression='gzip')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -186,7 +137,7 @@ if __name__ == '__main__':
     for f in tqdm(files_sub):
         month = f.split('/')[-1].split('.')[0]
         print("Working with month  " + month)
-        if int(month) > 201906:
+        if int(month) > 201312:
             old = False
         else:
             old = True
