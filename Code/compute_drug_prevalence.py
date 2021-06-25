@@ -95,7 +95,7 @@ if __name__ == '__main__':
         print('overriding input dir')
         input_dir = idir
     if odir:
-        print('overriding input dir')
+        print('overriding output dir')
         output_dir = odir
 
 
@@ -165,7 +165,7 @@ if __name__ == '__main__':
     print("Done computing LSOA level prescription prevalences, writing files")
 
 
-    writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , monthly_borough_costs_new , monthly_borough_items_new , conditions)
+    writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , monthly_borough_costs_new , monthly_borough_items_new , conditions,output_dir)
     dumpDrugs(DiseaseDrugs)
 
     print("Finished processing !!!!! ")

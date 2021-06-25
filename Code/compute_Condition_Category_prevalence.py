@@ -88,7 +88,7 @@ def calculateTemporalMetrics_LSOA(all_presc , old = True):
         costField = '7'
         practiceField = '2'
         itemField = '5'
-        LSOA_map = LSOA_dist_2021
+        LSOA_map = LSOA_dist_old
     else:
         quantityField = 'TOTAL_QUANTITY'
         dosageField = '19'
@@ -118,7 +118,7 @@ def calculateTemporalMetrics_LSOA(all_presc , old = True):
     return  LSOA_quantity , LSOA_costs, LSOA_dosage , LSOA_items
 
 
-def writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , monthly_borough_costs_new , monthly_borough_items_new ,diseases):
+def writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , monthly_borough_costs_new , monthly_borough_items_new ,diseases, output_dir):
     LSOA_patient_pop = prepare_lsoa_GP_population()
     for disease in tqdm(diseases):
         disease_dict = {'YYYYMM':[] , 'LSOA_CODE' : [] , 'Total_quantity' : [] ,'Dosage_ratio' :[] , 'Total_cost' : [] ,'Total_items': [] , 'Patient_count' : []}
@@ -160,7 +160,7 @@ if __name__ == '__main__':
         print('overriding input dir')
         input_dir = idir
     if odir:
-        print('overriding input dir')
+        print('overriding output dir')
         output_dir = odir
 
 
@@ -232,7 +232,7 @@ if __name__ == '__main__':
     print("Done computing LSOA level prescription prevalences, writing files")
 
 
-    writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , monthly_borough_costs_new , monthly_borough_items_new , conditions)
+    writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , monthly_borough_costs_new , monthly_borough_items_new , conditions , output_dir)
     dumpDrugs(DiseaseDrugs)
 
     print("Finished processing !!!!! ")
