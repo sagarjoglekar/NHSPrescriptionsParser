@@ -1,4 +1,5 @@
 .vscode/
 *.log
+*.pyc
 .ipynb_checkpoints/*
 data_prep/*.gz

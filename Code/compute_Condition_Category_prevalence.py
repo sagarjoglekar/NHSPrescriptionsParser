@@ -58,9 +58,12 @@ def loadLSOA_mappings():
     LSOA_dist_2021 = json.load(open(mappings_dir + 'GP_LSOA_PATIENTSDIST_2021.json','rb'))
     return [LSOA_dist_old , LSOA_dist_2021]
 
-def prepare_lsoa_GP_population():
+def prepare_lsoa_GP_population(isOld):
     LSOA_patient_pop = {}
-    LSOA_patients_map = json.load(open(mappings_dir + 'GPs.json','r'))
+    if isOld:
+        LSOA_patients_map = json.load(open(mappings_dir + 'GPs_2013.json','r'))
+    else:
+        LSOA_patients_map = json.load(open(mappings_dir + 'GPs.json','r'))
     for GP in tqdm(LSOA_patients_map):
         for lsoa in LSOA_patients_map[GP]['Patient_registry_LSOA']:
             if lsoa not in LSOA_patient_pop:
@@ -118,8 +121,8 @@ def calculateTemporalMetrics_LSOA(all_presc , old = True):
     return  LSOA_quantity , LSOA_costs, LSOA_dosage , LSOA_items
 
 
-def writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , monthly_borough_costs_new , monthly_borough_items_new ,diseases, output_dir):
-    LSOA_patient_pop = prepare_lsoa_GP_population()
+def writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , monthly_borough_costs_new , monthly_borough_items_new ,diseases, output_dir,isOld=False):
+    LSOA_patient_pop = prepare_lsoa_GP_population(isOld)
     for disease in tqdm(diseases):
         disease_dict = {'YYYYMM':[] , 'LSOA_CODE' : [] , 'Total_quantity' : [] ,'Dosage_ratio' :[] , 'Total_cost' : [] ,'Total_items': [] , 'Patient_count' : []}
         for yyyymm in monthly_borough_dosage_new:
@@ -203,7 +206,7 @@ if __name__ == '__main__':
 
     for f in tqdm(files_sub):
         month = f.split('/')[-1].split('.')[0]
-        print("Working with month  " + month)
+        print("Working with file  " + f)
         if int(month) > 201312:
             old = False
         else:
@@ -232,7 +235,7 @@ if __name__ == '__main__':
     print("Done computing LSOA level prescription prevalences, writing files")
 
 
-    writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , monthly_borough_costs_new , monthly_borough_items_new , conditions , output_dir)
+    writeResultFiles(monthly_borough_quantity_new ,monthly_borough_dosage_new , monthly_borough_costs_new , monthly_borough_items_new , conditions , output_dir, old)
     dumpDrugs(DiseaseDrugs)
 
     print("Finished processing !!!!! ")
